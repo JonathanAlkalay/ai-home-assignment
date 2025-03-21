@@ -17,6 +17,7 @@ import {
   FileText,
   Share2,
 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface EditingPost {
   id: number
@@ -25,6 +26,7 @@ interface EditingPost {
 }
 
 export default function SavedPosts() {
+  const router = useRouter()
   const { data: posts = [], isLoading } = usePosts()
   const updatePost = useUpdatePost()
   const updateDraftStatus = useUpdateDraftStatus()
@@ -46,29 +48,51 @@ export default function SavedPosts() {
     setEditingPost(null)
   }
 
-  const handleUpdateDraftStatus = async (id: number, isDraft: boolean) => {
-    await updateDraftStatus.mutateAsync({ id, isDraft })
+  const handleUpdateDraftStatus = async (postId: number, isDraft: boolean) => {
+    try {
+      await updateDraftStatus.mutateAsync({ id: postId, isDraft })
+    } catch (error) {
+      console.error('Failed to update draft status:', error)
+    }
   }
 
-  const handleDeletePost = async (id: number) => {
-    await deletePost.mutateAsync(id)
+  const handleDeletePost = async (postId: number) => {
+    try {
+      await deletePost.mutateAsync(postId)
+    } catch (error) {
+      console.error('Failed to delete post:', error)
+    }
   }
 
-  const toggleExpand = (id: number) => {
-    setExpandedPost(expandedPost === id ? null : id)
+  const toggleExpand = (postId: number) => {
+    setExpandedPost(expandedPost === postId ? null : postId)
   }
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        <Card className="p-4">
-          <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="space-y-2">
-            <div className="h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-          </div>
-        </Card>
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="p-4 animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-3/4 mb-2" />
+            <div className="h-4 bg-gray-200 rounded w-1/4 mb-4" />
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-full" />
+              <div className="h-4 bg-gray-200 rounded w-5/6" />
+            </div>
+          </Card>
+        ))}
       </div>
+    )
+  }
+
+  if (!posts.length) {
+    return (
+      <Card className="p-6 text-center">
+        <h2 className="text-xl font-semibold mb-2">No Posts Yet</h2>
+        <p className="text-gray-600">
+          Generate your first post using the form on the left.
+        </p>
+      </Card>
     )
   }
 
@@ -198,12 +222,6 @@ export default function SavedPosts() {
             {publishedPosts.map((post: Post) => renderPost(post, false))}
           </div>
         </div>
-      )}
-
-      {posts.length === 0 && (
-        <Card className="p-8 text-center text-gray-500">
-          <p>No posts yet. Start by generating some content!</p>
-        </Card>
       )}
     </div>
   )

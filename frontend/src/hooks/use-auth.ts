@@ -1,3 +1,5 @@
+'use client';
+
 import { useMutation } from '@tanstack/react-query'
 import { apiService } from '@/lib/api-service'
 import { toast } from 'sonner'
@@ -13,39 +15,43 @@ interface RegisterCredentials extends LoginCredentials {
   lastName: string
 }
 
-export function useLogin() {
+export const useLogin = () => {
   const router = useRouter()
 
   return useMutation({
-    mutationFn: (credentials: LoginCredentials) =>
-      apiService.login(credentials.email, credentials.password),
-    onSuccess: (data) => {
+    mutationFn: async (data: { email: string; password: string }) => {
+      const result = await apiService.login(data.email, data.password)
+      return result
+    },
+    onSuccess: () => {
       toast.success('Logged in successfully')
       router.push('/dashboard')
     },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to login')
+    onError: (error: Error) => {
+      toast.error(error.message)
     },
   })
 }
 
-export function useRegister() {
+export const useRegister = () => {
   const router = useRouter()
 
   return useMutation({
-    mutationFn: (credentials: RegisterCredentials) =>
-      apiService.register({
-        email: credentials.email,
-        password: credentials.password,
-        firstName: credentials.firstName,
-        lastName: credentials.lastName
-      }),
+    mutationFn: async (data: {
+      email: string;
+      password: string;
+      firstName: string;
+      lastName: string;
+    }) => {
+      const result = await apiService.register(data)
+      return result
+    },
     onSuccess: () => {
-      toast.success('Registered successfully')
+      toast.success('Account created successfully')
       router.push('/dashboard')
     },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : 'Failed to register')
+    onError: (error: Error) => {
+      toast.error(error.message)
     },
   })
 } 

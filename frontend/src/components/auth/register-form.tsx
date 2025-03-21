@@ -1,15 +1,13 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
-import { apiService } from "@/lib/api-service"
+import { useRegister } from "@/hooks/use-auth"
 
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -21,67 +19,39 @@ const registerSchema = z.object({
 type RegisterFormValues = z.infer<typeof registerSchema>
 
 export function RegisterForm() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
+  const register = useRegister()
 
-  const form = useForm<RegisterFormValues>({
+  const {
+    register: registerField,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-      firstName: "",
-      lastName: "",
-    },
   })
 
-  async function onSubmit(data: RegisterFormValues) {
-    setIsLoading(true)
+  const onSubmit = async (data: RegisterFormValues) => {
     try {
-      const result = await apiService.register(data)
-      if (result && result.access_token) {
-        localStorage.setItem("token", result.access_token)
-        toast.success("Account created successfully")
-        router.push("/dashboard")
-      } else {
-        console.error('Invalid response format:', result)
-        toast.error("Unexpected response format from server")
-      }
-    } catch (error: any) {
-      console.error('Form submission error:', error)
-      const errorMessage = error.response?.data?.message 
-        || error.message 
-        || "Failed to create account. Please check your connection and try again."
-      toast.error(errorMessage)
-    } finally {
-      setIsLoading(false)
+      await register.mutateAsync(data)
+    } catch (error) {
+      console.error("Registration failed:", error)
     }
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="firstName">First name</Label>
-          <Input
-            id="firstName"
-            {...form.register("firstName")}
-          />
-          {form.formState.errors.firstName && (
-            <p className="text-sm text-red-500">
-              {form.formState.errors.firstName.message}
-            </p>
+          <Label htmlFor="firstName">First Name</Label>
+          <Input id="firstName" {...registerField("firstName")} />
+          {errors.firstName && (
+            <p className="text-sm text-red-500">{errors.firstName.message}</p>
           )}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="lastName">Last name</Label>
-          <Input
-            id="lastName"
-            {...form.register("lastName")}
-          />
-          {form.formState.errors.lastName && (
-            <p className="text-sm text-red-500">
-              {form.formState.errors.lastName.message}
-            </p>
+          <Label htmlFor="lastName">Last Name</Label>
+          <Input id="lastName" {...registerField("lastName")} />
+          {errors.lastName && (
+            <p className="text-sm text-red-500">{errors.lastName.message}</p>
           )}
         </div>
       </div>
@@ -90,30 +60,31 @@ export function RegisterForm() {
         <Input
           id="email"
           type="email"
-          {...form.register("email")}
+          placeholder="you@example.com"
+          {...registerField("email")}
         />
-        {form.formState.errors.email && (
-          <p className="text-sm text-red-500">
-            {form.formState.errors.email.message}
-          </p>
+        {errors.email && (
+          <p className="text-sm text-red-500">{errors.email.message}</p>
         )}
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          {...form.register("password")}
-        />
-        {form.formState.errors.password && (
-          <p className="text-sm text-red-500">
-            {form.formState.errors.password.message}
-          </p>
+        <Input id="password" type="password" {...registerField("password")} />
+        {errors.password && (
+          <p className="text-sm text-red-500">{errors.password.message}</p>
         )}
       </div>
-      <Button type="submit" className="w-full" disabled={isLoading}>
-        {isLoading ? "Creating account..." : "Create account"}
+      <Button type="submit" className="w-full" disabled={register.isPending}>
+        {register.isPending ? "Creating account..." : "Register"}
       </Button>
+      <div className="text-center text-sm">
+        <p className="text-gray-500">
+          Already have an account?{" "}
+          <Link href="/login" className="text-primary hover:underline">
+            Login
+          </Link>
+        </p>
+      </div>
     </form>
   )
 } 

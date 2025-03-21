@@ -11,9 +11,9 @@ export interface Post {
 }
 
 // Query key factory
-const queryKeys = {
+export const queryKeys = {
   posts: ['posts'] as const,
-  post: (id: number) => ['post', id] as const,
+  post: (id: string | number) => ['post', id] as const,
 }
 
 // Fetch all posts
@@ -84,4 +84,11 @@ export function useGeneratePost() {
       toast.error(error instanceof Error ? error.message : 'Failed to generate content')
     },
   })
-} 
+}
+
+export const usePost = (id: string | number) => {
+  return useQuery({
+    queryKey: queryKeys.post(id),
+    queryFn: () => apiService.getPost(id),
+  });
+}; 

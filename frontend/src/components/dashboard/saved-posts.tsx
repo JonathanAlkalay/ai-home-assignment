@@ -12,6 +12,8 @@ import { usePosts, useUpdatePost, useUpdateDraftStatus, useDeletePost, Post } fr
 import {
   Pencil,
   Trash2,
+  ChevronDown,
+  ChevronUp,
   FileText,
   Share2,
 } from 'lucide-react'
@@ -28,6 +30,7 @@ export default function SavedPosts() {
   const updateDraftStatus = useUpdateDraftStatus()
   const deletePost = useDeletePost()
   const [editingPost, setEditingPost] = useState<EditingPost | null>(null)
+  const [expandedPost, setExpandedPost] = useState<number | null>(null)
 
   const draftPosts = posts.filter((post: Post) => post.isDraft)
   const publishedPosts = posts.filter((post: Post) => !post.isDraft)
@@ -51,9 +54,13 @@ export default function SavedPosts() {
     await deletePost.mutateAsync(id)
   }
 
+  const toggleExpand = (id: number) => {
+    setExpandedPost(expandedPost === id ? null : id)
+  }
+
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         <Card className="p-4">
           <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
           <div className="space-y-2">
@@ -65,191 +72,138 @@ export default function SavedPosts() {
     )
   }
 
+  const renderPost = (post: Post, isDraft: boolean) => (
+    <Card key={post.id} className="p-4">
+      {editingPost?.id === post.id ? (
+        <div className="space-y-4">
+          <Input
+            value={editingPost.title}
+            onChange={(e) =>
+              setEditingPost({ ...editingPost, title: e.target.value })
+            }
+            className="text-lg font-semibold"
+          />
+          <Textarea
+            value={editingPost.content}
+            onChange={(e) =>
+              setEditingPost({ ...editingPost, content: e.target.value })
+            }
+            className="min-h-[200px]"
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setEditingPost(null)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleUpdatePost(editingPost)}
+              disabled={updatePost.isPending}
+            >
+              {updatePost.isPending ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex-1 min-w-0">
+              <Link
+                href={`/post/${post.id}`}
+                className="block group cursor-pointer"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-lg font-semibold truncate group-hover:text-primary">
+                    {post.title}
+                  </h3>
+                  {isDraft && <Badge variant="secondary">Draft</Badge>}
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                  <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div className={`text-gray-600 group-hover:text-gray-900 ${expandedPost !== post.id && 'line-clamp-2'}`}>
+                  {post.content}
+                </div>
+              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-2"
+                onClick={() => toggleExpand(post.id)}
+              >
+                {expandedPost === post.id ? (
+                  <ChevronUp className="h-4 w-4 mr-1" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 mr-1" />
+                )}
+                {expandedPost === post.id ? "Show Less" : "Show More"}
+              </Button>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setEditingPost({
+                    id: post.id,
+                    title: post.title,
+                    content: post.content,
+                  })
+                }
+              >
+                <Pencil className="h-4 w-4" />
+                <span className="sr-only">Edit post</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleUpdateDraftStatus(post.id, !isDraft)}
+                disabled={updateDraftStatus.isPending}
+              >
+                <FileText className="h-4 w-4" />
+                <span className="sr-only">{isDraft ? "Publish post" : "Move to drafts"}</span>
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => handleDeletePost(post.id)}
+                disabled={deletePost.isPending}
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="sr-only">Delete post</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </Card>
+  )
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {draftPosts.length > 0 && (
         <div>
-          <h2 className="text-2xl font-bold mb-4">Drafts</h2>
-          <div className="space-y-4">
-            {draftPosts.map((post: Post) => (
-              <Card key={post.id} className="p-4">
-                {editingPost?.id === post.id ? (
-                  <div className="space-y-4">
-                    <Input
-                      value={editingPost.title}
-                      onChange={(e) =>
-                        setEditingPost({ ...editingPost, title: e.target.value })
-                      }
-                      className="text-lg font-semibold"
-                    />
-                    <Textarea
-                      value={editingPost.content}
-                      onChange={(e) =>
-                        setEditingPost({ ...editingPost, content: e.target.value })
-                      }
-                      className="min-h-[200px]"
-                    />
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => setEditingPost(null)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={() => handleUpdatePost(editingPost)}
-                        disabled={updatePost.isPending}
-                      >
-                        {updatePost.isPending ? "Saving..." : "Save"}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold">{post.title}</h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <span>
-                            {new Date(post.createdAt).toLocaleDateString()}
-                          </span>
-                          <Badge variant="secondary">Draft</Badge>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            setEditingPost({
-                              id: post.id,
-                              title: post.title,
-                              content: post.content,
-                            })
-                          }
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleUpdateDraftStatus(post.id, false)}
-                          disabled={updateDraftStatus.isPending}
-                        >
-                          {updateDraftStatus.isPending ? "Publishing..." : "Publish"}
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeletePost(post.id)}
-                          disabled={deletePost.isPending}
-                        >
-                          {deletePost.isPending ? "Deleting..." : "Delete"}
-                        </Button>
-                      </div>
-                    </div>
-                    <p className="text-gray-600 whitespace-pre-wrap">
-                      {post.content}
-                    </p>
-                  </div>
-                )}
-              </Card>
-            ))}
+          <h2 className="text-xl font-semibold mb-3">Drafts</h2>
+          <div className="space-y-3">
+            {draftPosts.map((post: Post) => renderPost(post, true))}
           </div>
         </div>
       )}
 
       {publishedPosts.length > 0 && (
         <div>
-          <h2 className="text-2xl font-bold mb-4">Published</h2>
-          <div className="space-y-4">
-            {publishedPosts.map((post: Post) => (
-              <Card key={post.id} className="p-4">
-                {editingPost?.id === post.id ? (
-                  <div className="space-y-4">
-                    <Input
-                      value={editingPost.title}
-                      onChange={(e) =>
-                        setEditingPost({ ...editingPost, title: e.target.value })
-                      }
-                      className="text-lg font-semibold"
-                    />
-                    <Textarea
-                      value={editingPost.content}
-                      onChange={(e) =>
-                        setEditingPost({ ...editingPost, content: e.target.value })
-                      }
-                      className="min-h-[200px]"
-                    />
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => setEditingPost(null)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={() => handleUpdatePost(editingPost)}
-                        disabled={updatePost.isPending}
-                      >
-                        {updatePost.isPending ? "Saving..." : "Save"}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold">{post.title}</h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <span>
-                            {new Date(post.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            setEditingPost({
-                              id: post.id,
-                              title: post.title,
-                              content: post.content,
-                            })
-                          }
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleUpdateDraftStatus(post.id, true)}
-                          disabled={updateDraftStatus.isPending}
-                        >
-                          {updateDraftStatus.isPending
-                            ? "Moving to Draft..."
-                            : "Move to Draft"}
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeletePost(post.id)}
-                          disabled={deletePost.isPending}
-                        >
-                          {deletePost.isPending ? "Deleting..." : "Delete"}
-                        </Button>
-                      </div>
-                    </div>
-                    <p className="text-gray-600 whitespace-pre-wrap">
-                      {post.content}
-                    </p>
-                  </div>
-                )}
-              </Card>
-            ))}
+          <h2 className="text-xl font-semibold mb-3">Published</h2>
+          <div className="space-y-3">
+            {publishedPosts.map((post: Post) => renderPost(post, false))}
           </div>
         </div>
+      )}
+
+      {posts.length === 0 && (
+        <Card className="p-8 text-center text-gray-500">
+          <p>No posts yet. Start by generating some content!</p>
+        </Card>
       )}
     </div>
   )

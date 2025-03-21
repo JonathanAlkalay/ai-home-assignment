@@ -215,7 +215,10 @@ class ApiService {
       }
       
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        throw new Error('Post not found or is not public');
+      }
       console.error('Get post failed:', {
         error,
         message: error instanceof Error ? error.message : 'Unknown error',

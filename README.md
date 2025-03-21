@@ -16,6 +16,7 @@ A full-stack application that generates AI-powered content. The project uses Nex
 
 - Node.js 18 or later
 - npm 7 or later (for workspace support)
+- Redis 6 or later (for caching)
 
 ## Getting Started
 
@@ -24,11 +25,36 @@ A full-stack application that generates AI-powered content. The project uses Nex
 npm install
 ```
 
-2. Set up environment variables:
-- Copy `.env.example` to `.env` in both frontend and backend directories
-- Update the variables as needed
+2. Set up Redis:
+- Install Redis on your system (if not already installed):
+  ```bash
+  # Ubuntu/Debian
+  sudo apt-get install redis-server
 
-3. Start the development servers:
+  # macOS with Homebrew
+  brew install redis
+  ```
+- Start Redis server:
+  ```bash
+  # Ubuntu/Debian
+  sudo service redis-server start
+
+  # macOS with Homebrew
+  brew services start redis
+  ```
+
+3. Set up environment variables:
+- Copy `.env.example` to `.env` in both frontend and backend directories
+- Update the variables as needed, including Redis configuration:
+  ```env
+  # Redis Configuration
+  REDIS_HOST=localhost
+  REDIS_PORT=6379
+  REDIS_PASSWORD=
+  REDIS_TTL=3600  # Cache TTL in seconds
+  ```
+
+4. Start the development servers:
 ```bash
 npm run dev
 ```
@@ -65,6 +91,10 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 PORT=3001
 OPENAI_API_KEY=your_api_key_here
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_TTL=3600
 ```
 
 ## Features
@@ -74,6 +104,7 @@ OPENAI_API_KEY=your_api_key_here
 - Post management dashboard
 - Public post sharing
 - Draft saving and editing
+- Redis caching for improved performance
 
 ## Tech Stack
 
@@ -89,5 +120,6 @@ OPENAI_API_KEY=your_api_key_here
   - Express
   - TypeORM
   - PostgreSQL
+  - Redis
   - JWT Authentication
   - OpenAI API 
